@@ -1,9 +1,6 @@
 # SecureLinuxArch
 Configuration for increase security of Arch Linux
 
-# SecureLinuxArch
-Configuration for increase security of Arch Linux
-
 Sure! Below is a secure kernel configuration guide that you can include in your GitHub README. This guide focuses on customizing and hardening the Linux kernel to enhance the security of your Arch Linux system.
 
 ---
