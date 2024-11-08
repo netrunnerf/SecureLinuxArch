@@ -1257,3 +1257,319 @@ Repeat the encryption steps for any additional partitions you wish to encrypt.
 ---
 
 By following this guide, you have set up full disk encryption using LUKS on your Arch Linux system. This enhances the security of your data, ensuring that it remains protected even if the physical device is compromised.
+
+Certainly! Below is a comprehensive guide on physical security measures for your Arch Linux system. This guide focuses on protecting your hardware and data from physical threats and can be included in your GitHub README.
+
+---
+
+# Physical Security Guide
+
+This guide provides detailed instructions on implementing physical security measures to protect your Arch Linux system. Physical security is a critical component of overall system security, ensuring that unauthorized individuals cannot gain physical access to your hardware and sensitive data.
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Understanding Physical Security Threats](#understanding-physical-security-threats)
+- [Step 1: Secure the Hardware](#step-1-secure-the-hardware)
+  - [1.1: Use Lockable Cases](#11-use-lockable-cases)
+  - [1.2: Secure Hardware Location](#12-secure-hardware-location)
+  - [1.3: BIOS/UEFI Security](#13-biosuefi-security)
+- [Step 2: Implement Boot Security](#step-2-implement-boot-security)
+  - [2.1: Set BIOS/UEFI Passwords](#21-set-biosuefi-passwords)
+  - [2.2: Disable Boot from External Media](#22-disable-boot-from-external-media)
+  - [2.3: Enable Secure Boot (Optional)](#23-enable-secure-boot-optional)
+- [Step 3: Protect Data at Rest](#step-3-protect-data-at-rest)
+  - [3.1: Full Disk Encryption with LUKS](#31-full-disk-encryption-with-luks)
+  - [3.2: Encrypt Swap and Temporary Filesystems](#32-encrypt-swap-and-temporary-filesystems)
+- [Step 4: Physical Access Controls](#step-4-physical-access-controls)
+  - [4.1: Access Control Systems](#41-access-control-systems)
+  - [4.2: Surveillance and Monitoring](#42-surveillance-and-monitoring)
+- [Step 5: Implement Hardware-Based Security Modules](#step-5-implement-hardware-based-security-modules)
+  - [5.1: Trusted Platform Module (TPM)](#51-trusted-platform-module-tpm)
+  - [5.2: Hardware Security Keys](#52-hardware-security-keys)
+- [Step 6: Regular Maintenance and Audits](#step-6-regular-maintenance-and-audits)
+- [References](#references)
+
+---
+
+## Introduction
+
+While software security measures are essential, they can be undermined if an attacker gains physical access to your system. Physical security involves safeguarding the hardware and the environment in which it operates, thereby preventing unauthorized physical access, damage, or interference.
+
+---
+
+## Understanding Physical Security Threats
+
+Common physical security threats include:
+
+- **Theft of Equipment**: Unauthorized removal of hardware.
+- **Unauthorized Access**: Physical access to the system leading to data breaches.
+- **Hardware Tampering**: Insertion of malicious hardware or modification of components.
+- **Environmental Hazards**: Damage due to fire, water, or extreme temperatures.
+
+Understanding these threats helps in implementing appropriate security measures.
+
+---
+
+## Step 1: Secure the Hardware
+
+### 1.1: Use Lockable Cases
+
+**Action**: Use computer cases that can be locked to prevent unauthorized opening.
+
+- **Benefits**:
+  - Prevents physical tampering with internal components.
+  - Deters insertion of hardware keyloggers or malicious devices.
+
+**Implementation**:
+
+- Choose cases with lock mechanisms.
+- Keep keys secure and limit access to authorized personnel.
+
+### 1.2: Secure Hardware Location
+
+**Action**: Place your hardware in a secure, restricted area.
+
+- **Benefits**:
+  - Limits physical access to trusted individuals.
+  - Reduces risk of theft or tampering.
+
+**Implementation**:
+
+- Use locked rooms or cabinets.
+- Install security cameras in sensitive areas.
+- Implement access control systems (e.g., keycards, biometric scanners).
+
+### 1.3: BIOS/UEFI Security
+
+**Action**: Secure the BIOS/UEFI firmware settings to prevent unauthorized changes.
+
+- **Benefits**:
+  - Prevents boot sequence changes.
+  - Blocks unauthorized access to hardware settings.
+
+**Implementation**:
+
+- **Update Firmware**: Ensure BIOS/UEFI firmware is up to date to patch vulnerabilities.
+
+  ```bash
+  # Check for firmware updates from your hardware manufacturer.
+  ```
+
+- **Set Administrator Password**:
+
+  - Access BIOS/UEFI settings during boot (usually by pressing `F2`, `Delete`, or `F12`).
+  - Navigate to the security settings.
+  - Set a strong administrator password.
+
+- **Set Boot Password** (Optional):
+
+  - Enable a password prompt every time the system boots.
+  - **Note**: May inconvenience legitimate users.
+
+---
+
+## Step 2: Implement Boot Security
+
+### 2.1: Set BIOS/UEFI Passwords
+
+**Action**: As above, set passwords to prevent unauthorized access to BIOS/UEFI settings and the boot process.
+
+### 2.2: Disable Boot from External Media
+
+**Action**: Prevent the system from booting from USB drives, CDs, or other external media.
+
+- **Benefits**:
+  - Stops attackers from using live systems to bypass security measures.
+
+**Implementation**:
+
+- Access BIOS/UEFI settings.
+- Set the boot order to prioritize the internal drive.
+- Disable boot options for external devices.
+- Lock BIOS/UEFI with a password to prevent changes.
+
+### 2.3: Enable Secure Boot (Optional)
+
+**Action**: Use UEFI Secure Boot to ensure only trusted software loads during the boot process.
+
+- **Benefits**:
+  - Prevents bootkits and rootkits from loading before the operating system.
+  - Ensures integrity of the bootloader and kernel.
+
+**Implementation**:
+
+- Access BIOS/UEFI settings.
+- Enable Secure Boot.
+- Configure your bootloader (e.g., GRUB) and kernel to support Secure Boot.
+- **Note**: Setting up Secure Boot on Arch Linux can be complex.
+
+  - **References**:
+    - [Arch Linux Secure Boot](https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot)
+
+---
+
+## Step 3: Protect Data at Rest
+
+### 3.1: Full Disk Encryption with LUKS
+
+**Action**: Encrypt the entire disk using LUKS to protect data if the physical drive is accessed.
+
+- **Benefits**:
+  - Prevents data access if the drive is removed.
+  - Protects sensitive information from unauthorized access.
+
+**Implementation**:
+
+- Follow the [Disk Encryption with LUKS Guide](#) provided earlier.
+
+### 3.2: Encrypt Swap and Temporary Filesystems
+
+**Action**: Ensure that swap partitions and temporary filesystems are encrypted.
+
+- **Benefits**:
+  - Prevents sensitive data from being written to unencrypted areas.
+
+**Implementation**:
+
+- **Encrypt Swap**:
+
+  - If using LVM:
+
+    ```bash
+    lvcreate -L 4G vg0 -n swap
+    mkswap /dev/vg0/swap
+    ```
+
+  - Add swap encryption options in `/etc/crypttab` and `/etc/fstab`.
+
+- **Use tmpfs for /tmp**:
+
+  - Add the following line to `/etc/fstab`:
+
+    ```ini
+    tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0
+    ```
+
+---
+
+## Step 4: Physical Access Controls
+
+### 4.1: Access Control Systems
+
+**Action**: Implement physical access control mechanisms to restrict entry to areas where hardware is stored.
+
+- **Benefits**:
+  - Limits access to authorized personnel.
+  - Provides audit trails of access events.
+
+**Implementation**:
+
+- **Keycard Systems**: Use electronic keycards or fobs.
+- **Biometric Systems**: Fingerprint or retina scanners.
+- **Security Guards**: Employ personnel to monitor access points.
+- **Visitor Logs**: Maintain records of all visitors.
+
+### 4.2: Surveillance and Monitoring
+
+**Action**: Install surveillance systems to monitor physical premises.
+
+- **Benefits**:
+  - Deters unauthorized access.
+  - Provides evidence in case of security incidents.
+
+**Implementation**:
+
+- **CCTV Cameras**: Place in strategic locations.
+- **Motion Detectors**: Alert security personnel of movement in restricted areas.
+- **Alarm Systems**: Trigger alarms upon unauthorized access.
+
+---
+
+## Step 5: Implement Hardware-Based Security Modules
+
+### 5.1: Trusted Platform Module (TPM)
+
+**Action**: Utilize TPM to enhance hardware security.
+
+- **Benefits**:
+  - Provides hardware-based cryptographic functions.
+  - Securely stores encryption keys.
+
+**Implementation**:
+
+- **Check for TPM**: Verify if your hardware includes a TPM chip.
+- **Enable TPM in BIOS/UEFI**: Access settings to activate TPM.
+- **Integrate with LUKS**:
+
+  - Use TPM to store LUKS keys securely.
+  - **Note**: Requires advanced configuration.
+
+- **References**:
+
+  - [Arch Linux TPM Encryption](https://wiki.archlinux.org/title/Trusted_Platform_Module)
+
+### 5.2: Hardware Security Keys
+
+**Action**: Use hardware security keys (e.g., YubiKey) for multi-factor authentication.
+
+- **Benefits**:
+  - Adds an additional layer of security for system logins and privileged actions.
+  - Protects against unauthorized access even if passwords are compromised.
+
+**Implementation**:
+
+- **Purchase a Compatible Key**: Such as YubiKey or similar devices.
+- **Configure PAM Modules**:
+
+  - Install `pam_u2f`:
+
+    ```bash
+    sudo pacman -S pam_u2f
+    ```
+
+  - Register the key and configure `/etc/pam.d/system-auth`.
+
+- **References**:
+
+  - [Arch Linux U2F Authentication](https://wiki.archlinux.org/title/U2F)
+
+---
+
+## Step 6: Regular Maintenance and Audits
+
+**Action**: Conduct regular physical security audits and maintain equipment.
+
+- **Benefits**:
+  - Identifies potential security gaps.
+  - Ensures all security measures are functioning correctly.
+
+**Implementation**:
+
+- **Audit Checklist**:
+
+  - Verify locks and access controls are operational.
+  - Check surveillance equipment functionality.
+  - Review access logs for anomalies.
+  - Inspect hardware for signs of tampering.
+
+- **Equipment Maintenance**:
+
+  - Ensure hardware components are in good condition.
+  - Replace failing components promptly.
+  - Keep firmware and hardware security features up to date.
+
+---
+
+## References
+
+- [Arch Linux Security Guide](https://wiki.archlinux.org/title/Security)
+- [Physical Security in IT](https://www.sans.org/white-papers/physical-security-it/)
+- [NIST Physical Security Standards](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-116.pdf)
+- [Trusted Platform Module](https://www.trustedcomputinggroup.org/tpm-main-specification/)
+- [Hardware Security Modules](https://en.wikipedia.org/wiki/Hardware_security_module)
+
+---
+
+By implementing the measures outlined in this guide, you significantly enhance the physical security of your Arch Linux system. Remember that physical security is an ongoing process that requires regular evaluation and updates to address new threats and vulnerabilities.
+
