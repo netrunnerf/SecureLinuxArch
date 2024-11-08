@@ -765,3 +765,495 @@ sudo systemctl start chronyd
 ---
 
 By following this guide, you have enhanced the network security of your Arch Linux system. Regular maintenance and monitoring are essential to maintain a secure environment. Feel free to adjust configurations to suit your specific needs, and always test changes in a controlled setting before deploying them on critical systems.
+
+Certainly! Below is a comprehensive guide on setting up LUKS (Linux Unified Key Setup) encryption for your Arch Linux system. This guide is designed to help you encrypt your disks using LUKS during the installation process, enhancing the security of your data. You can include this guide in your GitHub README.
+
+---
+
+# Disk Encryption with LUKS Guide
+
+This guide provides detailed instructions on how to set up full disk encryption using LUKS on Arch Linux. Encrypting your disks ensures that your data remains secure and inaccessible to unauthorized users, especially in the event of physical theft.
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Prerequisites](#prerequisites)
+- [Understanding LUKS Encryption](#understanding-luks-encryption)
+- [Step 1: Boot from Arch Linux Installation Media](#step-1-boot-from-arch-linux-installation-media)
+- [Step 2: Prepare the Disk](#step-2-prepare-the-disk)
+  - [Option A: Using GPT with UEFI](#option-a-using-gpt-with-uefi)
+  - [Option B: Using MBR with BIOS](#option-b-using-mbr-with-bios)
+- [Step 3: Encrypt the Partition with LUKS](#step-3-encrypt-the-partition-with-luks)
+- [Step 4: Set Up LVM on LUKS (Optional)](#step-4-set-up-lvm-on-luks-optional)
+- [Step 5: Format and Mount Filesystems](#step-5-format-and-mount-filesystems)
+- [Step 6: Install the Base System](#step-6-install-the-base-system)
+- [Step 7: Configure the System](#step-7-configure-the-system)
+- [Step 8: Configure mkinitcpio](#step-8-configure-mkinitcpio)
+- [Step 9: Configure the Bootloader](#step-9-configure-the-bootloader)
+- [Step 10: Finalize the Installation](#step-10-finalize-the-installation)
+- [Maintenance and Tips](#maintenance-and-tips)
+- [References](#references)
+
+---
+
+## Introduction
+
+LUKS is the standard for Linux disk encryption. It provides a standard on-disk format, facilitating compatibility among distributions and enabling secure management of multiple user passwords.
+
+This guide walks you through encrypting your root partition during a fresh Arch Linux installation. It covers both UEFI/GPT and BIOS/MBR setups and includes optional steps for using LVM (Logical Volume Manager) on top of LUKS.
+
+---
+
+## Prerequisites
+
+- Arch Linux installation media (USB or CD).
+- Basic understanding of Linux command-line operations.
+- Familiarity with disk partitioning concepts.
+- A backup of any important data on the target disk.
+
+---
+
+## Understanding LUKS Encryption
+
+- **LUKS (Linux Unified Key Setup):** A standard for disk encryption that uses the kernel's dm-crypt subsystem.
+- **Benefits of LUKS:**
+  - Supports multiple keys/passwords.
+  - Provides strong encryption (uses cryptographic algorithms like AES).
+  - Integrates with the kernel's device mapper subsystem.
+
+---
+
+## Step 1: Boot from Arch Linux Installation Media
+
+1. **Insert the installation media** and boot the system.
+2. **Select the Arch Linux installation option** from the boot menu.
+
+---
+
+## Step 2: Prepare the Disk
+
+### Identify the Target Disk
+
+List all disks to identify your target disk (e.g., `/dev/sda`):
+
+```bash
+lsblk
+```
+
+### Option A: Using GPT with UEFI
+
+#### Partition the Disk Using `gdisk` or `cgdisk`
+
+```bash
+gdisk /dev/sda
+```
+
+#### Create Partitions
+
+- **EFI System Partition (ESP):** 512 MiB, type `ef00`.
+- **Boot Partition (Optional):** 1 GiB, type `8300`.
+- **Root Partition:** Remaining space, type `8300`.
+
+**Example Partition Table:**
+
+| Partition | Size      | Type | Description              |
+|-----------|-----------|------|--------------------------|
+| /dev/sda1 | 512 MiB   | ef00 | EFI System Partition     |
+| /dev/sda2 | 1 GiB     | 8300 | /boot (unencrypted)      |
+| /dev/sda3 | Rest of disk | 8300 | Encrypted root partition |
+
+### Option B: Using MBR with BIOS
+
+#### Partition the Disk Using `fdisk`
+
+```bash
+fdisk /dev/sda
+```
+
+#### Create Partitions
+
+- **Boot Partition (Optional):** 1 GiB, type `83`.
+- **Root Partition:** Remaining space, type `83`.
+
+---
+
+## Step 3: Encrypt the Partition with LUKS
+
+### Initialize LUKS on the Root Partition
+
+**Replace `/dev/sda3` with your actual root partition.**
+
+```bash
+cryptsetup luksFormat /dev/sda3
+```
+
+- **Warning:** This will erase all data on the partition.
+- **Enter a strong passphrase** when prompted.
+
+### Open the Encrypted Partition
+
+```bash
+cryptsetup open /dev/sda3 cryptroot
+```
+
+- This creates a decrypted mapping at `/dev/mapper/cryptroot`.
+
+---
+
+## Step 4: Set Up LVM on LUKS (Optional)
+
+Using LVM allows for flexible disk management.
+
+### Create a Physical Volume
+
+```bash
+pvcreate /dev/mapper/cryptroot
+```
+
+### Create a Volume Group
+
+```bash
+vgcreate vg0 /dev/mapper/cryptroot
+```
+
+### Create Logical Volumes
+
+- **Swap Volume (Optional):**
+
+  ```bash
+  lvcreate -L 4G vg0 -n swap
+  ```
+
+- **Root Volume:**
+
+  ```bash
+  lvcreate -l 100%FREE vg0 -n root
+  ```
+
+---
+
+## Step 5: Format and Mount Filesystems
+
+### Format the Partitions
+
+- **EFI System Partition (ESP):**
+
+  ```bash
+  mkfs.fat -F32 /dev/sda1
+  ```
+
+- **Boot Partition (If created):**
+
+  ```bash
+  mkfs.ext4 /dev/sda2
+  ```
+
+- **Root Partition:**
+
+  - **If using LVM:**
+
+    ```bash
+    mkfs.ext4 /dev/vg0/root
+    ```
+
+  - **If not using LVM:**
+
+    ```bash
+    mkfs.ext4 /dev/mapper/cryptroot
+    ```
+
+- **Swap Partition (If using LVM):**
+
+  ```bash
+  mkswap /dev/vg0/swap
+  ```
+
+### Mount the Filesystems
+
+- **Mount Root Partition:**
+
+  - **With LVM:**
+
+    ```bash
+    mount /dev/vg0/root /mnt
+    ```
+
+  - **Without LVM:**
+
+    ```bash
+    mount /dev/mapper/cryptroot /mnt
+    ```
+
+- **Mount Boot Partition (If created):**
+
+  ```bash
+  mkdir /mnt/boot
+  mount /dev/sda2 /mnt/boot
+  ```
+
+- **Mount EFI System Partition:**
+
+  ```bash
+  mkdir /mnt/boot/efi
+  mount /dev/sda1 /mnt/boot/efi
+  ```
+
+- **Enable Swap (If created):**
+
+  ```bash
+  swapon /dev/vg0/swap
+  ```
+
+---
+
+## Step 6: Install the Base System
+
+```bash
+pacstrap /mnt base linux linux-firmware
+```
+
+- **Optional:** Install additional packages like `base-devel`, `vim`, `sudo`.
+
+---
+
+## Step 7: Configure the System
+
+### Generate fstab
+
+```bash
+genfstab -U /mnt >> /mnt/etc/fstab
+```
+
+### Chroot into the System
+
+```bash
+arch-chroot /mnt
+```
+
+### Set the Timezone
+
+```bash
+ln -sf /usr/share/zoneinfo/Region/City /etc/localtime
+hwclock --systohc
+```
+
+### Localization
+
+Edit `/etc/locale.gen` and uncomment your locale (e.g., `en_US.UTF-8 UTF-8`):
+
+```bash
+nano /etc/locale.gen
+```
+
+Generate the locales:
+
+```bash
+locale-gen
+```
+
+Set the `LANG` variable:
+
+```bash
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
+```
+
+### Set the Hostname
+
+```bash
+echo "your_hostname" > /etc/hostname
+```
+
+Update `/etc/hosts`:
+
+```ini
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   your_hostname.localdomain your_hostname
+```
+
+---
+
+## Step 8: Configure mkinitcpio
+
+Edit `/etc/mkinitcpio.conf`:
+
+```bash
+nano /etc/mkinitcpio.conf
+```
+
+### Modify the HOOKS Array
+
+- **For LUKS without LVM:**
+
+  ```ini
+  HOOKS=(base udev autodetect modconf block encrypt filesystems keyboard fsck)
+  ```
+
+- **For LUKS with LVM:**
+
+  ```ini
+  HOOKS=(base udev autodetect modconf block encrypt lvm2 filesystems keyboard fsck)
+  ```
+
+### Regenerate the initramfs
+
+```bash
+mkinitcpio -P
+```
+
+---
+
+## Step 9: Configure the Bootloader
+
+### Install GRUB and Required Packages
+
+```bash
+pacman -S grub efibootmgr dosfstools os-prober mtools
+```
+
+- **If using BIOS/MBR, you can skip `efibootmgr` and `mtools`.**
+
+### Install GRUB
+
+- **For UEFI Systems:**
+
+  ```bash
+  grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
+  ```
+
+- **For BIOS Systems:**
+
+  ```bash
+  grub-install --target=i386-pc /dev/sda
+  ```
+
+### Configure GRUB for LUKS
+
+Edit `/etc/default/grub`:
+
+```bash
+nano /etc/default/grub
+```
+
+Add the following to `GRUB_CMDLINE_LINUX`:
+
+- **Without LVM:**
+
+  ```ini
+  GRUB_CMDLINE_LINUX="cryptdevice=UUID=your_partition_uuid:cryptroot root=/dev/mapper/cryptroot"
+  ```
+
+- **With LVM:**
+
+  ```ini
+  GRUB_CMDLINE_LINUX="cryptdevice=UUID=your_partition_uuid:cryptlvm root=/dev/vg0/root"
+  ```
+
+- **Find the UUID:**
+
+  ```bash
+  blkid /dev/sda3
+  ```
+
+### Generate GRUB Configuration
+
+```bash
+grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+---
+
+## Step 10: Finalize the Installation
+
+### Set the Root Password
+
+```bash
+passwd
+```
+
+### Create a New User (Optional)
+
+```bash
+useradd -m -G wheel -s /bin/bash your_username
+passwd your_username
+```
+
+Edit sudoers file to grant sudo access:
+
+```bash
+EDITOR=nano visudo
+```
+
+Uncomment:
+
+```ini
+%wheel ALL=(ALL) ALL
+```
+
+### Exit chroot and Reboot
+
+```bash
+exit
+umount -R /mnt
+reboot
+```
+
+---
+
+## Maintenance and Tips
+
+### Backup LUKS Header
+
+It's crucial to backup the LUKS header to prevent data loss if it becomes corrupted.
+
+```bash
+cryptsetup luksHeaderBackup /dev/sda3 --header-backup-file luks-header-backup.img
+```
+
+Store this backup in a secure location.
+
+### Add Additional Passphrases
+
+You can add more passphrases to the LUKS container:
+
+```bash
+cryptsetup luksAddKey /dev/sda3
+```
+
+### Change or Remove Passphrases
+
+- **Change Passphrase:**
+
+  ```bash
+  cryptsetup luksChangeKey /dev/sda3
+  ```
+
+- **Remove Passphrase:**
+
+  ```bash
+  cryptsetup luksRemoveKey /dev/sda3
+  ```
+
+### Check LUKS Status
+
+```bash
+cryptsetup -v status cryptroot
+```
+
+### Encrypt Additional Partitions
+
+Repeat the encryption steps for any additional partitions you wish to encrypt.
+
+---
+
+## References
+
+- [Arch Linux Installation Guide](https://wiki.archlinux.org/title/Installation_guide)
+- [Arch Linux LUKS Encryption](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system)
+- [GRUB Encryption with LUKS](https://wiki.archlinux.org/title/GRUB#Encrypted_/boot)
+- [LVM on LUKS](https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system#Encrypted_LVM)
+- [cryptsetup Manual](https://man.archlinux.org/man/cryptsetup.8)
+
+---
+
+By following this guide, you have set up full disk encryption using LUKS on your Arch Linux system. This enhances the security of your data, ensuring that it remains protected even if the physical device is compromised.
